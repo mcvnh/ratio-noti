@@ -259,7 +259,7 @@ impl RatioMonitor {
             {
                 Ok(ratio) => {
                     let update = format!(
-                        "*{}*\n`{:.8}`\n{} ${:.2} / {} ${:.2}",
+                        "*{}*\n`{:.8}`\n{} `${:.2}` / {} `${:.2}`",
                         escape_markdown(&pair.name),
                         ratio.ratio,
                         escape_markdown(&pair.symbol_a),

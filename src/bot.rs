@@ -174,8 +174,8 @@ impl BotHandler {
                                 let text = format!(
                                     "📈 *{}*\n\n\
                                     *Ratio:* `{:.8}`\n\n\
-                                    {} \\- ${:.2}\n\
-                                    {} \\- ${:.2}\n\n\
+                                    {} \\- `${:.2}`\n\
+                                    {} \\- `${:.2}`\n\n\
                                     _Time: {}_",
                                     escape_markdown(&pair.name),
                                     ratio.ratio,
@@ -253,14 +253,14 @@ impl BotHandler {
                                     let text = format!(
                                         "📊 *Volume\\-Based Analysis*\n\n\
                                         *Pair:* {}\n\
-                                        *Volume:* {}\n\
+                                        *Volume:* `{}`\n\
                                         *Ratio:* `{:.8}`\n\n\
                                         *{}*\n\
-                                        Effective Price: ${:.2}\n\
-                                        Slippage: {:.3}%\n\n\
+                                        Effective Price: `${:.2}`\n\
+                                        Slippage: `{:.3}%`\n\n\
                                         *{}*\n\
-                                        Effective Price: ${:.2}\n\
-                                        Slippage: {:.3}%\n\n\
+                                        Effective Price: `${:.2}`\n\
+                                        Slippage: `{:.3}%`\n\n\
                                         _Time: {}_",
                                         escape_markdown(&pair.name),
                                         volume,
