@@ -58,19 +58,36 @@ cargo run --release -- monitor
 
 ## Usage
 
-### Monitor Mode (Continuous)
+### Full Mode (Recommended)
 
-Start the monitoring service that will continuously check your configured ratios and send alerts:
+Start both monitoring and interactive bot together:
+
+```bash
+cargo run --release -- start
+```
+
+This gives you:
+- **Automatic monitoring** - Checks ratios at configured intervals
+- **Threshold alerts** - Notifications when ratios change by 5%, 10%, 15%, 20%, etc.
+- **Periodic updates** - Hourly summary reports
+- **Interactive bot** - Query ratios on-demand with button menus
+- **Persistent history** - All data saved to SQLite database
+
+### Monitor Mode Only
+
+For monitoring without interactive features:
 
 ```bash
 cargo run --release -- monitor
 ```
 
-This will:
-- Monitor all ratio pairs defined in `config.toml`
-- Send alerts when thresholds are breached (5%, 10%, 15%, 20%, etc.)
-- Send periodic updates every hour
-- Run continuously until stopped (Ctrl+C)
+### Interactive Bot Only
+
+For on-demand queries without automatic monitoring:
+
+```bash
+cargo run --release -- bot
+```
 
 ### One-Time Calculations
 

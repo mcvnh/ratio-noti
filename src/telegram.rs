@@ -28,17 +28,18 @@ impl TelegramNotifier {
     /// Send a formatted ratio alert message
     pub async fn send_ratio_alert(&self, pair_name: &str, ratio: f64, change_pct: f64, time_window: &str) -> Result<()> {
         let emoji = if change_pct > 0.0 { "📈" } else { "📉" };
+        let time_str = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S UTC").to_string();
         let message = format!(
             "{} *Ratio Alert: {}*\n\n\
             Current Ratio: `{:.8}`\n\
             Change: `{:+.2}%` in {}\n\
             Time: {}",
             emoji,
-            pair_name,
+            escape_markdown(pair_name),
             ratio,
             change_pct,
-            time_window,
-            chrono::Utc::now().format("%Y-%m-%d %H:%M:%S UTC")
+            escape_markdown(time_window),
+            escape_markdown(&time_str)
         );
 
         self.bot
@@ -52,10 +53,11 @@ impl TelegramNotifier {
 
     /// Send a periodic ratio update
     pub async fn send_periodic_update(&self, updates: &[String]) -> Result<()> {
+        let time_str = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S UTC").to_string();
         let message = format!(
             "📊 *Periodic Ratio Update*\n\n{}\n\n_Time: {}_",
             updates.join("\n\n"),
-            chrono::Utc::now().format("%Y-%m-%d %H:%M:%S UTC")
+            escape_markdown(&time_str)
         );
 
         self.bot
@@ -94,4 +96,17 @@ impl TelegramNotifier {
 
         Ok(())
     }
+}
+
+/// Escape special characters for Telegram MarkdownV2
+fn escape_markdown(text: &str) -> String {
+    text.chars()
+        .map(|c| match c {
+            '_' | '*' | '[' | ']' | '(' | ')' | '~' | '`' | '>' | '#' | '+' | '-' | '=' | '|'
+            | '{' | '}' | '.' | '!' => {
+                format!("\\{}", c)
+            }
+            _ => c.to_string(),
+        })
+        .collect()
 }

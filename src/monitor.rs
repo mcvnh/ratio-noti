@@ -260,11 +260,11 @@ impl RatioMonitor {
                 Ok(ratio) => {
                     let update = format!(
                         "*{}*\n`{:.8}`\n{} ${:.2} / {} ${:.2}",
-                        pair.name,
+                        escape_markdown(&pair.name),
                         ratio.ratio,
-                        pair.symbol_a,
+                        escape_markdown(&pair.symbol_a),
                         ratio.price_a,
-                        pair.symbol_b,
+                        escape_markdown(&pair.symbol_b),
                         ratio.price_b
                     );
                     updates.push(update);
@@ -292,4 +292,17 @@ fn format_duration(seconds: u64) -> String {
     } else {
         format!("{}h", seconds / 3600)
     }
+}
+
+/// Escape special characters for Telegram MarkdownV2
+fn escape_markdown(text: &str) -> String {
+    text.chars()
+        .map(|c| match c {
+            '_' | '*' | '[' | ']' | '(' | ')' | '~' | '`' | '>' | '#' | '+' | '-' | '=' | '|'
+            | '{' | '}' | '.' | '!' => {
+                format!("\\{}", c)
+            }
+            _ => c.to_string(),
+        })
+        .collect()
 }

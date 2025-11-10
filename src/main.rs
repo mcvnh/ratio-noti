@@ -86,6 +86,9 @@ enum Commands {
     /// Start interactive Telegram bot with buttons
     Bot,
 
+    /// Start both monitoring and interactive bot together
+    Start,
+
     /// Test Telegram connection
     TestTelegram,
 
@@ -161,6 +164,9 @@ async fn main() -> Result<()> {
         }
         Commands::Bot => {
             handle_bot(&cli.config).await?;
+        }
+        Commands::Start => {
+            handle_start(&cli.config).await?;
         }
         Commands::TestTelegram => {
             handle_test_telegram(&cli.config).await?;
@@ -325,6 +331,82 @@ async fn handle_bot(config_path: &str) -> Result<()> {
     println!("{}", "=".repeat(60));
 
     bot_handler.run().await?;
+
+    Ok(())
+}
+
+async fn handle_start(config_path: &str) -> Result<()> {
+    log::info!("Starting combined monitoring + interactive bot mode...");
+
+    let config = Config::from_file(config_path)
+        .context("Failed to load config file. Did you create config.toml?")?;
+
+    config.validate()?;
+
+    log::info!("Configuration loaded successfully");
+    log::info!("Starting {} ratio pairs", config.ratio_pairs.len());
+
+    // Initialize database
+    let db_url = format!("sqlite:{}?mode=rwc", config.database.path);
+    let database = Database::new(&db_url)
+        .await
+        .context("Failed to initialize database")?;
+    log::info!("Database initialized at {}", config.database.path);
+
+    // Create shared components
+    let client = BinanceClient::new();
+    let calculator = RatioCalculator::new(client.clone());
+    let notifier = TelegramNotifier::new(&config.telegram.token, config.telegram.user_id);
+
+    // Create monitor
+    let mut monitor = RatioMonitor::new(
+        config.clone(),
+        calculator.clone(),
+        notifier,
+        database,
+    );
+
+    // Create bot handler
+    let bot_calculator = RatioCalculator::new(client);
+    let bot_handler = BotHandler::new(config.clone(), bot_calculator);
+
+    println!("\n{}", "=".repeat(60));
+    println!("Ratio-Noti: Full Mode Started");
+    println!("{}", "=".repeat(60));
+    println!("✓ Monitoring: Active (checking every {}s)", config.monitoring.check_interval_secs);
+    println!("✓ Interactive Bot: Ready");
+    println!("✓ Database: {}", config.database.path);
+    println!();
+    println!("Features:");
+    println!("  • Automatic alerts on threshold breaches");
+    println!("  • Hourly periodic updates");
+    println!("  • Interactive commands via /start in Telegram");
+    println!();
+    println!("Press Ctrl+C to stop");
+    println!("{}", "=".repeat(60));
+
+    // Run both concurrently
+    let monitor_task = tokio::spawn(async move {
+        if let Err(e) = monitor.start().await {
+            log::error!("Monitor error: {}", e);
+        }
+    });
+
+    let bot_task = tokio::spawn(async move {
+        if let Err(e) = bot_handler.run().await {
+            log::error!("Bot error: {}", e);
+        }
+    });
+
+    // Wait for both tasks (or until one fails/exits)
+    tokio::select! {
+        _ = monitor_task => {
+            log::info!("Monitor task ended");
+        }
+        _ = bot_task => {
+            log::info!("Bot task ended");
+        }
+    }
 
     Ok(())
 }
