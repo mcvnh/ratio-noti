@@ -2,7 +2,7 @@ use anyhow::Result;
 use teloxide::{
     dispatching::dialogue::InMemStorage,
     prelude::*,
-    types::{InlineKeyboardButton, InlineKeyboardMarkup, MaybeInaccessibleMessage, ParseMode},
+    types::{InlineKeyboardButton, InlineKeyboardMarkup, ParseMode},
     utils::command::BotCommands,
 };
 
@@ -52,9 +52,7 @@ impl BotHandler {
 
         let callback_handler = Update::filter_callback_query().endpoint(Self::handle_callback);
 
-        let all_handlers = dptree::entry()
-            .branch(handler)
-            .branch(callback_handler);
+        let all_handlers = dptree::entry().branch(handler).branch(callback_handler);
 
         // Store config and calculator in bot data
         let mut dispatcher = Dispatcher::builder(bot, all_handlers)
@@ -81,15 +79,13 @@ impl BotHandler {
     ) -> HandlerResult {
         match cmd {
             Command::Start => {
-                let text = format!(
-                    "👋 Welcome to Ratio-Noti Bot!\n\n\
+                let text = "👋 Welcome to Ratio-Noti Bot!\n\n\
                     I can help you monitor cryptocurrency price ratios from Binance\\.\n\n\
                     *Available Commands:*\n\
                     /pairs \\- View all configured ratio pairs\n\
                     /ratio \\- Get current ratios\n\
                     /help \\- Show this help message\n\n\
-                    Click the buttons below or use commands to get started\\!"
-                );
+                    Click the buttons below or use commands to get started\\!";
 
                 bot.send_message(msg.chat.id, text)
                     .parse_mode(ParseMode::MarkdownV2)
@@ -163,54 +159,61 @@ impl BotHandler {
 
                     // Send "calculating" message
                     if let Some(msg) = q.message {
-                        if let Some(chat) = msg.chat() {
-                            bot.send_message(chat.id, "⏳ Calculating ratio\\.\\.\\.")
-                                .parse_mode(ParseMode::MarkdownV2)
-                                .await?;
+                        let chat = msg.chat();
+                        let chat_id = chat.id;
+                        bot.send_message(chat_id, "⏳ Calculating ratio\\.\\.\\.")
+                            .parse_mode(ParseMode::MarkdownV2)
+                            .await?;
 
-                            // Calculate ratio
-                            match calculator
-                                .calculate_simple_ratio(&pair.name, &pair.symbol_a, &pair.symbol_b)
-                                .await
-                            {
-                                Ok(ratio) => {
-                                    let text = format!(
-                                        "📈 *{}*\n\n\
-                                        *Ratio:* `{:.8}`\n\n\
-                                        {} \\- ${:.2}\n\
-                                        {} \\- ${:.2}\n\n\
-                                        _Time: {}_",
-                                        escape_markdown(&pair.name),
-                                        ratio.ratio,
-                                        escape_markdown(&pair.symbol_a),
-                                        ratio.price_a,
-                                        escape_markdown(&pair.symbol_b),
-                                        ratio.price_b,
-                                        escape_markdown(&ratio.timestamp.format("%Y-%m-%d %H:%M:%S UTC").to_string())
-                                    );
+                        // Calculate ratio
+                        match calculator
+                            .calculate_simple_ratio(&pair.name, &pair.symbol_a, &pair.symbol_b)
+                            .await
+                        {
+                            Ok(ratio) => {
+                                let text = format!(
+                                    "📈 *{}*\n\n\
+                                    *Ratio:* `{:.8}`\n\n\
+                                    {} \\- ${:.2}\n\
+                                    {} \\- ${:.2}\n\n\
+                                    _Time: {}_",
+                                    escape_markdown(&pair.name),
+                                    ratio.ratio,
+                                    escape_markdown(&pair.symbol_a),
+                                    ratio.price_a,
+                                    escape_markdown(&pair.symbol_b),
+                                    ratio.price_b,
+                                    escape_markdown(
+                                        &ratio
+                                            .timestamp
+                                            .format("%Y-%m-%d %H:%M:%S UTC")
+                                            .to_string()
+                                    )
+                                );
 
-                                    // Check if there's volume configured for detailed analysis
-                                    if let Some(volume) = pair.analysis_volume {
-                                        bot.send_message(chat.id, text.clone())
-                                            .parse_mode(ParseMode::MarkdownV2)
-                                            .reply_markup(create_volume_analysis_keyboard(&pair.name, volume))
-                                            .await?;
-                                    } else {
-                                        bot.send_message(chat.id, text)
-                                            .parse_mode(ParseMode::MarkdownV2)
-                                            .reply_markup(create_back_keyboard())
-                                            .await?;
-                                    }
-                                }
-                                Err(e) => {
-                                    let error_text = format!(
-                                        "❌ Error calculating ratio: {}",
-                                        escape_markdown(&e.to_string())
-                                    );
-                                    bot.send_message(chat.id, error_text)
+                                // Check if there's volume configured for detailed analysis
+                                if let Some(volume) = pair.analysis_volume {
+                                    bot.send_message(chat_id, text.clone())
                                         .parse_mode(ParseMode::MarkdownV2)
+                                        .reply_markup(create_volume_analysis_keyboard(
+                                            &pair.name, volume,
+                                        ))
+                                        .await?;
+                                } else {
+                                    bot.send_message(chat_id, text)
+                                        .parse_mode(ParseMode::MarkdownV2)
+                                        .reply_markup(create_back_keyboard())
                                         .await?;
                                 }
+                            }
+                            Err(e) => {
+                                let error_text = format!(
+                                    "❌ Error calculating ratio: {}",
+                                    escape_markdown(&e.to_string())
+                                );
+                                bot.send_message(chat_id, error_text)
+                                    .parse_mode(ParseMode::MarkdownV2)
+                                    .await?;
                             }
                         }
                     }
@@ -231,54 +234,64 @@ impl BotHandler {
                         bot.answer_callback_query(&q.id).await?;
 
                         if let Some(msg) = q.message {
-                            if let Some(chat) = msg.chat() {
-                                bot.send_message(chat.id, "⏳ Analyzing order book\\.\\.\\.")
-                                    .parse_mode(ParseMode::MarkdownV2)
-                                    .await?;
+                            let chat = msg.chat();
+                            let chat_id = chat.id;
+                            bot.send_message(chat_id, "⏳ Analyzing order book\\.\\.\\.")
+                                .parse_mode(ParseMode::MarkdownV2)
+                                .await?;
 
-                                match calculator
-                                    .calculate_volume_based_ratio(&pair.name, &pair.symbol_a, &pair.symbol_b, volume)
-                                    .await
-                                {
-                                    Ok(ratio) => {
-                                        let text = format!(
-                                            "📊 *Volume\\-Based Analysis*\n\n\
-                                            *Pair:* {}\n\
-                                            *Volume:* {}\n\
-                                            *Ratio:* `{:.8}`\n\n\
-                                            *{}*\n\
-                                            Effective Price: ${:.2}\n\
-                                            Slippage: {:.3}%\n\n\
-                                            *{}*\n\
-                                            Effective Price: ${:.2}\n\
-                                            Slippage: {:.3}%\n\n\
-                                            _Time: {}_",
-                                            escape_markdown(&pair.name),
-                                            volume,
-                                            ratio.ratio,
-                                            escape_markdown(&pair.symbol_a),
-                                            ratio.effective_price_a,
-                                            ratio.slippage_a,
-                                            escape_markdown(&pair.symbol_b),
-                                            ratio.effective_price_b,
-                                            ratio.slippage_b,
-                                            escape_markdown(&ratio.timestamp.format("%Y-%m-%d %H:%M:%S UTC").to_string())
-                                        );
+                            match calculator
+                                .calculate_volume_based_ratio(
+                                    &pair.name,
+                                    &pair.symbol_a,
+                                    &pair.symbol_b,
+                                    volume,
+                                )
+                                .await
+                            {
+                                Ok(ratio) => {
+                                    let text = format!(
+                                        "📊 *Volume\\-Based Analysis*\n\n\
+                                        *Pair:* {}\n\
+                                        *Volume:* {}\n\
+                                        *Ratio:* `{:.8}`\n\n\
+                                        *{}*\n\
+                                        Effective Price: ${:.2}\n\
+                                        Slippage: {:.3}%\n\n\
+                                        *{}*\n\
+                                        Effective Price: ${:.2}\n\
+                                        Slippage: {:.3}%\n\n\
+                                        _Time: {}_",
+                                        escape_markdown(&pair.name),
+                                        volume,
+                                        ratio.ratio,
+                                        escape_markdown(&pair.symbol_a),
+                                        ratio.effective_price_a,
+                                        ratio.slippage_a,
+                                        escape_markdown(&pair.symbol_b),
+                                        ratio.effective_price_b,
+                                        ratio.slippage_b,
+                                        escape_markdown(
+                                            &ratio
+                                                .timestamp
+                                                .format("%Y-%m-%d %H:%M:%S UTC")
+                                                .to_string()
+                                        )
+                                    );
 
-                                        bot.send_message(chat.id, text)
-                                            .parse_mode(ParseMode::MarkdownV2)
-                                            .reply_markup(create_back_keyboard())
-                                            .await?;
-                                    }
-                                    Err(e) => {
-                                        let error_text = format!(
-                                            "❌ Error analyzing volume: {}",
-                                            escape_markdown(&e.to_string())
-                                        );
-                                        bot.send_message(chat.id, error_text)
-                                            .parse_mode(ParseMode::MarkdownV2)
-                                            .await?;
-                                    }
+                                    bot.send_message(chat_id, text)
+                                        .parse_mode(ParseMode::MarkdownV2)
+                                        .reply_markup(create_back_keyboard())
+                                        .await?;
+                                }
+                                Err(e) => {
+                                    let error_text = format!(
+                                        "❌ Error analyzing volume: {}",
+                                        escape_markdown(&e.to_string())
+                                    );
+                                    bot.send_message(chat_id, error_text)
+                                        .parse_mode(ParseMode::MarkdownV2)
+                                        .await?;
                                 }
                             }
                         }
@@ -288,22 +301,22 @@ impl BotHandler {
                 bot.answer_callback_query(&q.id).await?;
 
                 if let Some(msg) = q.message {
-                    if let Some(chat) = msg.chat() {
-                        let keyboard = create_pair_selection_keyboard(&config.ratio_pairs);
-                        bot.send_message(chat.id, "📊 Select a ratio pair:")
-                            .reply_markup(keyboard)
-                            .await?;
-                    }
+                    let chat = msg.chat();
+                    let chat_id = chat.id;
+                    let keyboard = create_pair_selection_keyboard(&config.ratio_pairs);
+                    bot.send_message(chat_id, "📊 Select a ratio pair:")
+                        .reply_markup(keyboard)
+                        .await?;
                 }
             } else if data == "main_menu" {
                 bot.answer_callback_query(&q.id).await?;
 
                 if let Some(msg) = q.message {
-                    if let Some(chat) = msg.chat() {
-                        bot.send_message(chat.id, "Main menu:")
-                            .reply_markup(create_main_keyboard())
-                            .await?;
-                    }
+                    let chat = msg.chat();
+                    let chat_id = chat.id;
+                    bot.send_message(chat_id, "Main menu:")
+                        .reply_markup(create_main_keyboard())
+                        .await?;
                 }
             }
         }
@@ -314,8 +327,14 @@ impl BotHandler {
 
 fn create_main_keyboard() -> InlineKeyboardMarkup {
     let buttons = vec![
-        vec![InlineKeyboardButton::callback("📊 Get Ratios", "main:ratios")],
-        vec![InlineKeyboardButton::callback("📋 View Pairs", "main:pairs")],
+        vec![InlineKeyboardButton::callback(
+            "📊 Get Ratios",
+            "main:ratios",
+        )],
+        vec![InlineKeyboardButton::callback(
+            "📋 View Pairs",
+            "main:pairs",
+        )],
     ];
 
     InlineKeyboardMarkup::new(buttons)
@@ -343,7 +362,10 @@ fn create_volume_analysis_keyboard(pair_name: &str, volume: f64) -> InlineKeyboa
             format!("📊 Volume Analysis ({})", volume),
             format!("volume:{}:{}", pair_name, volume),
         )],
-        vec![InlineKeyboardButton::callback("« Back to Pairs", "back_to_pairs")],
+        vec![InlineKeyboardButton::callback(
+            "« Back to Pairs",
+            "back_to_pairs",
+        )],
     ];
 
     InlineKeyboardMarkup::new(buttons)
@@ -351,7 +373,10 @@ fn create_volume_analysis_keyboard(pair_name: &str, volume: f64) -> InlineKeyboa
 
 fn create_back_keyboard() -> InlineKeyboardMarkup {
     let buttons = vec![
-        vec![InlineKeyboardButton::callback("« Back to Pairs", "back_to_pairs")],
+        vec![InlineKeyboardButton::callback(
+            "« Back to Pairs",
+            "back_to_pairs",
+        )],
         vec![InlineKeyboardButton::callback("« Main Menu", "main_menu")],
     ];
 
@@ -382,7 +407,8 @@ fn create_pairs_list(config: &Config) -> String {
 fn escape_markdown(text: &str) -> String {
     text.chars()
         .map(|c| match c {
-            '_' | '*' | '[' | ']' | '(' | ')' | '~' | '`' | '>' | '#' | '+' | '-' | '=' | '|' | '{' | '}' | '.' | '!' => {
+            '_' | '*' | '[' | ']' | '(' | ')' | '~' | '`' | '>' | '#' | '+' | '-' | '=' | '|'
+            | '{' | '}' | '.' | '!' => {
                 format!("\\{}", c)
             }
             _ => c.to_string(),

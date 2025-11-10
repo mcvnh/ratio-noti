@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
-use sqlx::{sqlite::SqlitePool, Row, SqliteConnection};
+use sqlx::{Row, sqlite::SqlitePool};
 
 pub struct Database {
     pool: SqlitePool,
@@ -241,11 +241,7 @@ impl Database {
     }
 
     /// Get ratio history for a specific pair
-    pub async fn get_ratio_history(
-        &self,
-        pair_name: &str,
-        limit: i64,
-    ) -> Result<Vec<RatioRecord>> {
+    pub async fn get_ratio_history(&self, pair_name: &str, limit: i64) -> Result<Vec<RatioRecord>> {
         let rows = sqlx::query(
             r#"
             SELECT id, pair_name, symbol_a, symbol_b, price_a, price_b, ratio, timestamp
@@ -328,11 +324,7 @@ impl Database {
     }
 
     /// Get alert history for a specific pair
-    pub async fn get_alert_history(
-        &self,
-        pair_name: &str,
-        limit: i64,
-    ) -> Result<Vec<AlertRecord>> {
+    pub async fn get_alert_history(&self, pair_name: &str, limit: i64) -> Result<Vec<AlertRecord>> {
         let rows = sqlx::query(
             r#"
             SELECT id, pair_name, ratio, change_percentage, threshold, timestamp
@@ -404,11 +396,7 @@ impl Database {
     }
 
     /// Get statistics for a pair
-    pub async fn get_pair_statistics(
-        &self,
-        pair_name: &str,
-        hours: i64,
-    ) -> Result<PairStatistics> {
+    pub async fn get_pair_statistics(&self, pair_name: &str, hours: i64) -> Result<PairStatistics> {
         let since = Utc::now() - chrono::Duration::hours(hours);
 
         let row = sqlx::query(
