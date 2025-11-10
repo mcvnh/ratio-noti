@@ -1,0 +1,36 @@
+# Example configuration file for ratio-noti
+# Copy this to config.toml and update with your values
+
+[telegram]
+# Telegram bot token (get from @BotFather)
+token = "YOUR_TELEGRAM_BOT_TOKEN"
+# Your Telegram user ID (get from @userinfobot)
+user_id = 123456789
+
+[monitoring]
+# How often to check for ratio changes (in seconds)
+check_interval_secs = 60
+# How often to send periodic notifications (in seconds, 3600 = 1 hour)
+periodic_notification_secs = 3600
+# Thresholds for change alerts (in percentage)
+change_thresholds = [5.0, 10.0, 15.0, 20.0]
+# Time window to detect sudden changes (in seconds, 300 = 5 minutes)
+change_window_secs = 300
+
+# Define your ratio pairs here
+[[ratio_pairs]]
+name = "BTC/ETH"
+symbol_a = "BTCUSDT"
+symbol_b = "ETHUSDT"
+analysis_volume = 1.0  # Optional: volume for slippage analysis
+
+[[ratio_pairs]]
+name = "ETH/BNB"
+symbol_a = "ETHUSDT"
+symbol_b = "BNBUSDT"
+analysis_volume = 10.0
+
+[[ratio_pairs]]
+name = "BTC/BNB"
+symbol_a = "BTCUSDT"
+symbol_b = "BNBUSDT"
