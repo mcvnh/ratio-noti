@@ -79,7 +79,7 @@ impl BotHandler {
     ) -> HandlerResult {
         match cmd {
             Command::Start => {
-                let text = "👋 Welcome to Ratio-Noti Bot!\n\n\
+                let text = "👋 Welcome to Ratio\\-Noti Bot\\!\n\n\
                     I can help you monitor cryptocurrency price ratios from Binance\\.\n\n\
                     *Available Commands:*\n\
                     /pairs \\- View all configured ratio pairs\n\
