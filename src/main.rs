@@ -269,7 +269,7 @@ async fn handle_monitor(config_path: &str) -> Result<()> {
     log::info!("Monitoring {} ratio pairs", config.ratio_pairs.len());
 
     // Initialize database
-    let db_url = format!("sqlite:{}", config.database.path);
+    let db_url = format!("sqlite:{}?mode=rwc", config.database.path);
     let database = Database::new(&db_url)
         .await
         .context("Failed to initialize database")?;
@@ -357,7 +357,7 @@ async fn handle_history(config_path: &str, pair_name: &str, limit: i64) -> Resul
     let config = Config::from_file(config_path)
         .context("Failed to load config file")?;
 
-    let db_url = format!("sqlite:{}", config.database.path);
+    let db_url = format!("sqlite:{}?mode=rwc", config.database.path);
     let database = Database::new(&db_url).await?;
 
     let records = database.get_ratio_history(pair_name, limit).await?;
@@ -392,7 +392,7 @@ async fn handle_alerts(config_path: &str, pair_name: Option<&str>, limit: i64) -
     let config = Config::from_file(config_path)
         .context("Failed to load config file")?;
 
-    let db_url = format!("sqlite:{}", config.database.path);
+    let db_url = format!("sqlite:{}?mode=rwc", config.database.path);
     let database = Database::new(&db_url).await?;
 
     let records = if let Some(pair) = pair_name {
@@ -434,7 +434,7 @@ async fn handle_stats(config_path: &str, pair_name: &str, hours: i64) -> Result<
     let config = Config::from_file(config_path)
         .context("Failed to load config file")?;
 
-    let db_url = format!("sqlite:{}", config.database.path);
+    let db_url = format!("sqlite:{}?mode=rwc", config.database.path);
     let database = Database::new(&db_url).await?;
 
     let stats = database.get_pair_statistics(pair_name, hours).await?;
