@@ -11,6 +11,9 @@ A Rust CLI application for calculating and monitoring cryptocurrency price ratio
 - **Periodic Updates**: Receive hourly summary reports of all monitored ratios
 - **Slippage Analysis**: Understand price impact for specific trade volumes
 - **Telegram Integration**: Receive all notifications directly in Telegram
+- **Interactive Bot**: Chat with your bot to get ratios on-demand with button menus
+- **Persistent Storage**: SQLite database stores all historical ratio data and alerts
+- **Statistics & Analysis**: Query historical data, view trends, and analyze price movements
 
 ## Quick Start
 
@@ -102,6 +105,27 @@ cargo run --release -- slippage \
   --side buy
 ```
 
+### Historical Data & Statistics
+
+Query historical ratio data:
+```bash
+cargo run --release -- history --pair "BTC/ETH" --limit 100
+```
+
+View alert history:
+```bash
+# All alerts
+cargo run --release -- alerts --limit 50
+
+# Filter by pair
+cargo run --release -- alerts --pair "BTC/ETH" --limit 50
+```
+
+Show statistics:
+```bash
+cargo run --release -- stats --pair "BTC/ETH" --hours 24
+```
+
 ### Utility Commands
 
 List all configured ratio pairs:
@@ -122,6 +146,10 @@ Edit `config.toml` to customize your monitoring:
 [telegram]
 token = "YOUR_BOT_TOKEN"
 user_id = 123456789
+
+[database]
+path = "ratio-noti.db"     # SQLite database file path
+retention_days = 90         # Optional: auto-cleanup old data
 
 [monitoring]
 check_interval_secs = 60              # Check every 60 seconds
@@ -148,6 +176,32 @@ analysis_volume = 10.0
 - `periodic_notification_secs`: How often to send summary updates (default: 3600 = 1 hour)
 - `change_thresholds`: Percentage changes that trigger alerts (e.g., [5.0, 10.0, 15.0, 20.0])
 - `change_window_secs`: Time window to detect sudden changes (default: 300 = 5 minutes)
+- `retention_days`: Days to keep historical data (optional, default: keep all data)
+
+## Data Persistence
+
+All monitoring data is automatically stored in a SQLite database:
+
+### What's Stored:
+- **Ratio Snapshots**: Every ratio calculation with timestamp, prices, and calculated ratio
+- **Alert History**: All triggered alerts with threshold information
+- **Volume Analysis**: Results from volume-based ratio calculations (optional)
+
+### Database Location:
+- Default: `ratio-noti.db` in the working directory
+- Configurable via `config.toml`
+- Portable SQLite format (single file)
+
+### Data Retention:
+- Configure `retention_days` to automatically cleanup old data
+- Example: `retention_days = 90` keeps last 90 days
+- Omit or set to `null` to keep all data indefinitely
+
+### Querying Data:
+Use the CLI commands to access your historical data:
+- `history` - View past ratio values
+- `alerts` - Review all alerts
+- `stats` - Analyze trends and statistics
 
 ## Example Notifications
 
@@ -181,8 +235,10 @@ The application is built with a modular architecture:
 
 - **binance.rs**: API client for Binance (prices and order books)
 - **ratio.rs**: Ratio calculation engine (simple, volume-based, slippage)
-- **monitor.rs**: Monitoring loop with threshold detection
+- **monitor.rs**: Monitoring loop with threshold detection and database persistence
 - **telegram.rs**: Telegram bot integration
+- **bot.rs**: Interactive Telegram bot with button menus
+- **database.rs**: SQLite storage for historical data and alerts
 - **config.rs**: Configuration management
 
 See [CLAUDE.md](CLAUDE.md) for detailed architecture documentation.

@@ -1,2 +1,5 @@
 /target
 config.toml
+*.db
+*.db-shm
+*.db-wal

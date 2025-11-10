@@ -12,7 +12,9 @@ clap = { version = "4.5", features = ["derive"] }
 config = "0.14"
 anyhow = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
-teloxide = { version = "0.13", features = ["macros"] }
+teloxide = { version = "0.13", features = ["macros", "ctrlc_handler"] }
+dptree = "0.3"
 log = "0.4"
 env_logger = "0.11"
 toml = "0.8"
+sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite"] }

@@ -4,6 +4,7 @@ use std::time::Duration;
 use tokio::time::{interval, Instant};
 
 use crate::config::{Config, RatioPair};
+use crate::database::Database;
 use crate::ratio::{RatioCalculator, SimpleRatio};
 use crate::telegram::TelegramNotifier;
 
@@ -17,6 +18,7 @@ pub struct RatioMonitor {
     config: Config,
     calculator: RatioCalculator,
     notifier: TelegramNotifier,
+    database: Database,
     history: HashMap<String, Vec<RatioSnapshot>>,
     last_periodic_notification: Instant,
     triggered_thresholds: HashMap<String, Vec<f64>>,
@@ -27,11 +29,13 @@ impl RatioMonitor {
         config: Config,
         calculator: RatioCalculator,
         notifier: TelegramNotifier,
+        database: Database,
     ) -> Self {
         Self {
             config,
             calculator,
             notifier,
+            database,
             history: HashMap::new(),
             last_periodic_notification: Instant::now(),
             triggered_thresholds: HashMap::new(),
@@ -84,8 +88,25 @@ impl RatioMonitor {
 
         log::debug!("Checked {}: ratio = {:.8}", pair.name, ratio_data.ratio);
 
-        // Store in history
+        // Store in history (in-memory)
         self.add_to_history(&pair.name, &ratio_data);
+
+        // Persist to database
+        if let Err(e) = self
+            .database
+            .insert_ratio_snapshot(
+                &pair.name,
+                &pair.symbol_a,
+                &pair.symbol_b,
+                ratio_data.price_a,
+                ratio_data.price_b,
+                ratio_data.ratio,
+                ratio_data.timestamp,
+            )
+            .await
+        {
+            log::error!("Failed to save ratio to database: {}", e);
+        }
 
         // Check for threshold breaches
         self.check_thresholds(&pair.name, &ratio_data).await?;
@@ -153,6 +174,21 @@ impl RatioMonitor {
                     self.notifier
                         .send_ratio_alert(pair_name, current.ratio, change_pct, &time_window)
                         .await?;
+
+                    // Save alert to database
+                    if let Err(e) = self
+                        .database
+                        .insert_alert(
+                            pair_name,
+                            current.ratio,
+                            change_pct,
+                            threshold,
+                            current.timestamp,
+                        )
+                        .await
+                    {
+                        log::error!("Failed to save alert to database: {}", e);
+                    }
 
                     self.mark_threshold_triggered(pair_name, threshold);
                 }

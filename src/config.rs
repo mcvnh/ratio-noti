@@ -6,7 +6,16 @@ use anyhow::{Context, Result};
 pub struct Config {
     pub telegram: TelegramConfig,
     pub monitoring: MonitoringConfig,
+    pub database: DatabaseConfig,
     pub ratio_pairs: Vec<RatioPair>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct DatabaseConfig {
+    /// Path to SQLite database file
+    pub path: String,
+    /// Days to keep historical data (older data will be cleaned up)
+    pub retention_days: Option<i64>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

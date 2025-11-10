@@ -7,6 +7,12 @@ token = "YOUR_TELEGRAM_BOT_TOKEN"
 # Your Telegram user ID (get from @userinfobot)
 user_id = 123456789
 
+[database]
+# Path to SQLite database file
+path = "ratio-noti.db"
+# Days to keep historical data (optional, default: keep all data)
+retention_days = 90
+
 [monitoring]
 # How often to check for ratio changes (in seconds)
 check_interval_secs = 60
